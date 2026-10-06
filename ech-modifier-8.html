@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECH modifier</title>
+<script>
+(function () {
+  var th = "";
+  try { th = localStorage.getItem("echTheme") || ""; } catch (e) {}
+  if (th !== "dark" && th !== "light") {
+    th = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+  }
+  document.documentElement.setAttribute("data-theme", th);
+})();
+</script>
+<style>
+  :root { color-scheme: light; --bg:#f3f6f4; --fg:#1c2321; --muted:#52605a; --accent:#0f6b5c; --accent-fg:#0f6b5c; --on-accent:#fff;
+          --field-bg:#fff; --field-bd:#b7c4be; --card-bg:#fff; --card-bd:#c9d3ce; --rep-bd:#dfe6e2; --status:#444; --warn:#9a5b00; }
+  :root[data-theme="dark"] { color-scheme: dark; --bg:#121212; --fg:#e6e6e6; --muted:#a3a3a3; --accent:#1f8f7c; --accent-fg:#5fd3bd; --on-accent:#fff;
+          --field-bg:#1e1e1e; --field-bd:#3d3d3d; --card-bg:#1e1e1e; --card-bd:#333; --rep-bd:#2b2b2b; --status:#bdbdbd; --warn:#e0a24a; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 16px/1.6 sans-serif; }
+  main { max-width: 720px; margin: 0 auto; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  p.sub { margin: 0 0 12px; color: var(--muted); }
+  .tools { display: flex; flex: none; gap: 8px; align-items: stretch; }
+  #theme { margin: 0; padding: 6px 12px; border: 1px solid var(--accent-fg); border-radius: 6px; background: var(--field-bg); color: var(--accent-fg); font: 14px sans-serif; white-space: nowrap; }
+  .langs { display: flex; flex: none; border: 1px solid var(--accent-fg); border-radius: 6px; overflow: hidden; }
+  .langs button { margin: 0; padding: 6px 12px; border: 0; border-radius: 0; background: var(--field-bg); color: var(--accent-fg); font: 14px sans-serif; }
+  .langs button.on { background: var(--accent); color: var(--on-accent); }
+  label { display: block; font-weight: bold; margin: 14px 0 6px; }
+  textarea, input[type=text], select { direction: ltr; text-align: left; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--field-bd); border-radius: 6px; background: var(--field-bg); color: var(--fg); font: 14px monospace; }
+  textarea { height: 150px; word-break: break-all; }
+  .opt { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; }
+  .opt input { width: 18px; height: 18px; margin-top: 4px; flex: none; }
+  .opt label { margin: 0; font-weight: normal; }
+  .chips label { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0; margin-inline-end: 14px; font-weight: normal; direction: ltr; }
+  .chips input { width: 18px; height: 18px; }
+  .packchips label { display: flex; align-items: center; gap: 8px; margin: 6px 0; font: 13px monospace; font-weight: normal; direction: ltr; word-break: break-all; }
+  .packchips input { width: 18px; height: 18px; flex: none; }
+  .hint { margin: 0; color: var(--muted); font-size: 14px; }
+  .actions button, .card button { margin: 12px 0 0; margin-inline-end: 8px; padding: 10px 16px; border: 0; border-radius: 6px; background: var(--accent); color: var(--on-accent); font: bold 16px sans-serif; }
+  .actions button.alt, .card button { background: var(--field-bg); color: var(--accent-fg); border: 1px solid var(--accent-fg); }
+  .actions label.filebtn { display: inline-block; margin: 12px 0 0; margin-inline-end: 8px; padding: 10px 16px; border: 1px solid var(--accent-fg); border-radius: 6px; background: var(--field-bg); color: var(--accent-fg); font: bold 16px sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .fileraw { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; opacity: 0; overflow: hidden; }
+  .card { margin-top: 10px; padding: 10px 12px; background: var(--card-bg); border: 1px solid var(--card-bd); border-radius: 6px; }
+  .card .name { word-break: break-word; }
+  .card button { margin-top: 8px; padding: 6px 14px; font-size: 14px; }
+  .qr { margin-top: 10px; text-align: center; }
+  .qr svg { width: 100%; max-width: 360px; height: auto; background: #fff; padding: 4px; box-sizing: border-box; }
+  #reportBox { margin-top: 8px; }
+  #reportBox summary { cursor: pointer; color: var(--accent-fg); font-weight: bold; }
+  .rep { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--rep-bd); font-size: 14px; }
+  .repname { flex: 1; word-break: break-word; }
+  .repok { color: var(--accent-fg); flex: none; }
+  .repwarn { color: var(--warn); flex: none; text-align: end; }
+  #status { margin-top: 10px; color: var(--status); min-height: 1.6em; }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div>
+      <h1 data-i="title">ECH modifier</h1>
+      <p class="sub" data-i="sub"></p>
+    </div>
+    <div class="tools">
+      <button type="button" id="theme"></button>
+      <div class="langs">
+        <button type="button" id="langFa">فارسی</button>
+        <button type="button" id="langEn">English</button>
+      </div>
+    </div>
+  </div>
+
+  <label for="profile" data-i="lblProfile"></label>
+  <select id="profile">
+    <option value="custom" data-i="prof_custom"></option>
+    <option value="mci_ech" data-i="prof_mci_ech"></option>
+    <option value="mci_v6" data-i="prof_mci_v6"></option>
+    <option value="mci_v6ff" data-i="prof_mci_v6ff"></option>
+    <option value="irancell_ff" data-i="prof_irancell_ff"></option>
+  </select>
+  <p class="hint" data-i="profileHint"></p>
+
+  <div class="opt">
+    <input type="checkbox" id="ffMode">
+    <label for="ffMode" data-i="ffMode"></label>
+  </div>
+  <p class="hint" data-i="ffHint"></p>
+
+  <div class="opt">
+    <input type="checkbox" id="useEch" checked>
+    <label for="useEch" data-i="useEch"></label>
+  </div>
+  <p class="hint" data-i="echExclusive"></p>
+  <div id="echBox">
+    <label for="echPreset" data-i="lblEch"></label>
+    <select id="echPreset">
+      <option value="cloudflare-ech.com+udp://1.1.1.1">cloudflare-ech.com+udp://1.1.1.1</option>
+      <option value="crypto.cloudflare.com+udp://1.1.1.1">crypto.cloudflare.com+udp://1.1.1.1</option>
+      <option value="cloudflare-ech.com+udp://1.0.0.1">cloudflare-ech.com+udp://1.0.0.1</option>
+      <option value="cloudflare-ech.com+udp://8.8.8.8">cloudflare-ech.com+udp://8.8.8.8</option>
+      <option value="cloudflare-ech.com+https://1.1.1.1/dns-query">cloudflare-ech.com+https://1.1.1.1/dns-query</option>
+      <option value="cloudflare-ech.com+https://8.8.8.8/dns-query">cloudflare-ech.com+https://8.8.8.8/dns-query</option>
+      <option value="__custom__" data-i="echCustom"></option>
+    </select>
+    <input type="text" id="ech" value="cloudflare-ech.com+udp://1.1.1.1" spellcheck="false" aria-label="ECH" data-ph="echPlaceholder" style="margin-top:8px;display:none">
+  </div>
+
+  <label for="fp" data-i="lblFp"></label>
+  <select id="fp">
+    <option>chrome</option><option>firefox</option><option>safari</option><option>ios</option>
+    <option>android</option><option>edge</option><option>360</option><option>qq</option>
+    <option>random</option><option>randomized</option><option>unsafe</option>
+  </select>
+
+  <label for="fmSel" data-i="lblFm"></label>
+  <select id="fmSel">
+    <option value="none" data-i="optNone"></option>
+    <option value="tlshello">tlshello-0-len</option>
+    <option value="custom" data-i="echCustom"></option>
+  </select>
+  <textarea id="fmText" spellcheck="false" style="height:110px;margin-top:8px;display:none"></textarea>
+
+  <label for="csSel" data-i="lblCs"></label>
+  <select id="csSel">
+    <option value="none" data-i="optNone"></option>
+    <option value="semipython">semi-python</option>
+    <option value="full" data-i="csFull"></option>
+    <option value="custom" data-i="echCustom"></option>
+  </select>
+  <textarea id="csText" spellcheck="false" style="height:90px;margin-top:8px;display:none"></textarea>
+
+  <div class="opt">
+    <input type="checkbox" id="addrOn">
+    <label for="addrOn" data-i="addrOn"></label>
+  </div>
+  <div id="addrBox" style="display:none">
+    <div id="addrFamBox">
+      <label for="addrFam" data-i="lblAddrFam"></label>
+      <select id="addrFam" style="margin-bottom:8px">
+        <option value="any" data-i="famAny"></option>
+        <option value="v4" data-i="famV4"></option>
+        <option value="v6" data-i="famV6"></option>
+      </select>
+    </div>
+    <label for="addrText" data-i="lblClean"></label>
+    <textarea id="addrText" spellcheck="false" style="height:90px" placeholder="188.114.97.6&#10;2a06:98c1:3121::7"></textarea>
+    <p class="hint" data-i="addrHint"></p>
+    <p class="hint" data-i="famRule"></p>
+  </div>
+
+  <div class="opt">
+    <input type="checkbox" id="alpnAuto">
+    <label for="alpnAuto" data-i="alpnAuto"></label>
+  </div>
+
+  <div class="opt">
+    <input type="checkbox" id="convert" checked>
+    <label for="convert" data-i="convert"></label>
+  </div>
+
+  <div class="opt">
+    <input type="checkbox" id="packMode">
+    <label for="packMode" data-i="packMode"></label>
+  </div>
+  <div id="packBox" style="display:none">
+    <select id="packType">
+      <option value="profile" data-i="packByProfile"></option>
+      <option value="ech" data-i="packByEch"></option>
+    </select>
+    <div class="packchips" id="profChips"></div>
+    <div class="packchips" id="packChips" style="display:none"></div>
+    <p class="hint" data-i="packHint"></p>
+  </div>
+
+  <label data-i="lblPorts"></label>
+  <div class="chips">
+    <label><input type="checkbox" name="port" value="443" checked>443</label>
+    <label><input type="checkbox" name="port" value="2053">2053</label>
+    <label><input type="checkbox" name="port" value="2083">2083</label>
+    <label><input type="checkbox" name="port" value="2087">2087</label>
+    <label><input type="checkbox" name="port" value="2096">2096</label>
+    <label><input type="checkbox" name="port" value="8443">8443</label>
+  </div>
+  <p class="hint" data-i="portsHint"></p>
+  <div class="opt">
+    <input type="checkbox" id="portsAll" checked>
+    <label for="portsAll" data-i="portsAll"></label>
+  </div>
+
+  <label for="input" data-i="lblIn"></label>
+  <textarea id="input" spellcheck="false"></textarea>
+
+  <div class="actions">
+    <button type="button" id="run" data-i="run"></button>
+    <button type="button" id="paste" class="alt" data-i="paste"></button>
+    <label for="fileIn" id="openFile" class="filebtn" data-i="openFile"></label>
+    <input type="file" id="fileIn" class="fileraw">
+    <button type="button" id="clear" class="alt" data-i="clear"></button>
+  </div>
+  <p class="hint" data-i="fileHint"></p>
+  <div class="actions" id="blockedBox" style="display:none"><button type="button" id="openSub" class="alt" data-i="openSub"></button></div>
+  <div id="status" role="status"></div>
+  <details id="reportBox" style="display:none">
+    <summary data-i="lblReport"></summary>
+    <div id="report"></div>
+  </details>
+
+  <label for="output" data-i="lblOut"></label>
+  <textarea id="output" readonly spellcheck="false"></textarea>
+  <div class="actions">
+    <button type="button" id="copy" class="alt" data-i="copy"></button>
+    <button type="button" id="copy64" class="alt" data-i="copy64"></button>
+    <button type="button" id="dlJson" class="alt" data-i="dlJson"></button>
+    <button type="button" id="copyJson" class="alt" data-i="copyJson"></button>
+  </div>
+  <p class="hint" data-i="jsonHintIos"></p>
+
+  <div id="cardsBox" style="display:none">
+    <label data-i="lblCards"></label>
+    <div id="cards"></div>
+  </div>
+  <p class="hint" style="margin-top:28px;text-align:center;direction:ltr">ECH modifier v25</p>
+</main>
+
+<script>
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(o*r,n*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});
+</script>
+<script>
+function trim(s) { return s.replace(/^\s+|\s+$/g, ""); }
+
+// encodeURIComponent throws on a lone surrogate (a cut-off emoji in a config name, for example); this version never throws
+var NATIVE_ENC = encodeURIComponent;
+function safeEnc(s) {
+  s = String(s);
+  try { return NATIVE_ENC(s); } catch (e) {}
+  var out = "", i, c, d;
+  for (i = 0; i < s.length; i++) {
+    c = s.charCodeAt(i);
+    if (c >= 0xD800 && c <= 0xDBFF) {
+      d = i + 1 < s.length ? s.charCodeAt(i + 1) : 0;
+      if (d >= 0xDC00 && d <= 0xDFFF) { out += NATIVE_ENC(s.charAt(i) + s.charAt(i + 1)); i++; }
+      else { out += "%EF%BF%BD"; }
+    } else if (c >= 0xDC00 && c <= 0xDFFF) { out += "%EF%BF%BD"; }
+    else { out += NATIVE_ENC(s.charAt(i)); }
+  }
+  return out;
+}
+
+var MAX_B64_DEPTH = 3;
+
+// percent-encode any non-ASCII characters in the #name so every link is plain ASCII
+function asciiFrag(frag) {
+  if (!frag) { return ""; }
+  try { return frag.replace(/[^\x00-\x7F]+/g, function (m) { return safeEnc(m); }); }
+  catch (e) { return frag; }
+}
+
+// keep the port in the config name honest: "... : 2086" becomes "... : 443"
+function renameFrag(frag, port, tagIt) {
+  if (!frag) { return ""; }
+  var name;
+  try { name = decodeURIComponent(frag.substring(1)); } catch (e) { return frag; }
+  var re = /(\s:\s*)\d+\s*$/;
+  if (re.test(name)) { name = name.replace(re, "$1" + port); }
+  else if (tagIt) { name += " - " + port; }
+  return "#" + safeEnc(name);
+}
+
+// short label for an ECH value, used in config names of the test pack
+function echLabel(v) {
+  var m = v.match(/^([^+]+)\+(udp|https|h2c|tcp|quic):\/\/([^\/\s]+)/i);
+  if (!m) { return "ECH " + (v.length > 24 ? v.substring(0, 24) : v); }
+  var dom = m[1].toLowerCase() === "cloudflare-ech.com" ? "" : m[1].split(".")[0] + " ";
+  return "ECH " + dom + m[2].toLowerCase() + " " + m[3];
+}
+// adds " | tag" to the #name of a link (plain ASCII result)
+function appendTag(link, tag) {
+  var h = link.indexOf("#"), name = "";
+  if (h !== -1) {
+    try { name = decodeURIComponent(link.substring(h + 1)); } catch (e) { name = link.substring(h + 1); }
+    link = link.substring(0, h);
+  }
+  return link + "#" + safeEnc(name ? name + " | " + tag : tag);
+}
+
+// name of a query token, percent-decoded and lower-cased (so FP=, %66p= and fp= all count as fp)
+function keyOf(tok) {
+  var name = tok.split("=")[0];
+  try { name = decodeURIComponent(name); } catch (e) {}
+  return name.toLowerCase();
+}
+function compareValue(tok) {
+  var i = tok.indexOf("=");
+  var v = i === -1 ? "" : tok.substring(i + 1);
+  try { v = decodeURIComponent(v); } catch (e) {}
+  return v.toLowerCase();
+}
+
+// splits "scheme://user@host:port" without guessing; returns null when it is not clean
+function parseBase(base) {
+  var m = base.match(/^([a-z][a-z0-9+.\-]*):\/\/(.*)$/i);
+  if (!m) { return null; }
+  var rest = m[2];
+  var at = rest.lastIndexOf("@");
+  if (at < 1) { return null; }
+  var user = rest.substring(0, at), hp = rest.substring(at + 1), host, port = "";
+  if (hp.charAt(0) === "[") {
+    var close = hp.indexOf("]");
+    if (close < 2) { return null; }
+    host = hp.substring(0, close + 1);
+    var tail = hp.substring(close + 1);
+    if (tail) {
+      if (!/^:\d{1,5}$/.test(tail)) { return null; }
+      port = tail.substring(1);
+    }
+  } else if (/^[0-9a-fA-F:.]+$/.test(hp) && hp.split(":").length > 2) {
+    host = "[" + hp + "]";            // bare IPv6 without brackets: the colons are part of the address, so there is no port
+  } else {
+    var c = hp.lastIndexOf(":");
+    if (c === -1) { host = hp; }
+    else {
+      host = hp.substring(0, c);
+      port = hp.substring(c + 1);
+      if (!/^\d{1,5}$/.test(port)) { return null; }
+    }
+    if (!host || /[\/\s:]/.test(host)) { return null; }
+  }
+  if (port && (+port < 1 || +port > 65535)) { return null; }
+  return { scheme: m[1], user: user, host: host, port: port };
+}
+function withPort(p, port) { return p.scheme + "://" + p.user + "@" + p.host + ":" + port; }
+function isIpLiteral(h) { return h.charAt(0) === "[" || /^\d{1,3}(\.\d{1,3}){3}$/.test(h); }
+
+// ---- address helpers ----
+function validV6(a) {
+  if (!/^[0-9a-fA-F:]+$/.test(a)) { return false; }
+  var dbl = a.split("::");
+  if (dbl.length > 2) { return false; }
+  var head = dbl[0] ? dbl[0].split(":") : [], tail = dbl.length === 2 && dbl[1] ? dbl[1].split(":") : [], all = head.concat(tail), i;
+  for (i = 0; i < all.length; i++) { if (!/^[0-9a-fA-F]{1,4}$/.test(all[i])) { return false; } }
+  return dbl.length === 1 ? head.length === 8 : head.length + tail.length <= 7;
+}
+// one address -> the form used inside a link (IPv6 gets its brackets), or "" when it is not valid
+function cleanAddr(a) {
+  a = trim(a);
+  if (!a) { return ""; }
+  if (a.charAt(0) === "[" && a.charAt(a.length - 1) === "]") { a = a.substring(1, a.length - 1); }
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(a)) {
+    var parts = a.split("."), i;
+    for (i = 0; i < 4; i++) { if (+parts[i] > 255 || (parts[i].length > 1 && parts[i].charAt(0) === "0")) { return ""; } }
+    return a;
+  }
+  if (a.indexOf(":") !== -1) { return validV6(a) ? "[" + a + "]" : ""; }
+  // a domain needs a dot, and its last part cannot be a number (so 1.2.3 or 1.2.3.4.5 are not domains)
+  if (a.indexOf(".") !== -1 && /^[A-Za-z0-9]([A-Za-z0-9.\-]*[A-Za-z0-9])?$/.test(a) && a.indexOf("..") === -1 && !/\.\d+$/.test(a)) { return a; }
+  return "";
+}
+// fam: "any" (IPv4, IPv6 or domain), "v4" (IPv4 only) or "v6" (IPv6 only). Anything else is counted as ignored.
+function addrFamily(h) { return h.charAt(0) === "[" ? "v6" : (/^\d+\.\d+\.\d+\.\d+$/.test(h) ? "v4" : "name"); }
+function parseAddrList(text, fam) {
+  var parts = text.split(/[\s,;]+/), list = [], seen = Object.create(null), bad = 0, other = 0, i, h;
+  fam = fam || "any";
+  for (i = 0; i < parts.length; i++) {
+    if (!parts[i]) { continue; }
+    h = cleanAddr(parts[i]);
+    if (!h) { bad++; continue; }
+    if (fam !== "any" && addrFamily(h) !== fam) { other++; continue; }   // valid, but meant for another type of preset
+    if (!seen[h]) { seen[h] = true; list.push(h); }
+  }
+  return { list: list, bad: bad, other: other };
+}
+function addrLabel(h) { return h.charAt(0) === "[" ? h.substring(1, h.length - 1) : h; }
+
+// ALPN that fits the transport: websocket and friends speak HTTP/1.1, xhttp and grpc need h2
+function alpnFor(net) { return /^(xhttp|splithttp|grpc|h2|http)$/.test(net) ? "h2%2Chttp%2F1.1" : "http%2F1.1"; }
+function rawValue(tok) { var i = tok.indexOf("="); return i === -1 ? "" : tok.substring(i + 1); }
+
+// o = { ech, fp, fm, cs, convert, ports, portsAll, addrs, alpnAuto }
+//   ech: "" means no ECH; fm and cs are already percent-encoded, "" means none (and removes the link's own);
+//   addrs: addresses to connect to instead of the config's own ([] keeps it)
+// returns { texts: [links], state }, state is one of
+// enhanced, converted, notls, noports, noname, noip, othersec, protocol, invalid, incomplete
+function addEch(link, o) {
+  var fp = o.fp || "chrome", ports = o.ports || [], allAddrs = o.addrs || [], addrs = allAddrs;
+  if (!/^(vless|trojan):\/\//i.test(link)) { return { texts: [], state: "protocol" }; }
+
+  var main = link, frag = "";
+  var hashAt = link.indexOf("#");
+  if (hashAt !== -1) { main = link.substring(0, hashAt); frag = link.substring(hashAt); }
+
+  var qAt = main.indexOf("?");
+  if (qAt === -1) { return { texts: [], state: "incomplete" }; }
+  var baseStr = main.substring(0, qAt);
+  var p = parseBase(baseStr);
+  if (!p) { return { texts: [], state: "invalid" }; }
+  if (!p.port) { p.port = "443"; baseStr = withPort(p, "443"); }   // no port in the link: TLS default
+
+  var tokens = main.substring(qAt + 1).split("&");
+  var kept = [], i, tok, k, any = false;
+  var fpAt = -1, secAt = -1, encAt = -1, alpnAt = -1, secVals = [], hostVal = "", sniVal = "", typeVal = "";
+  var hasSni = false, hasAlpn = false, hasHost = false;
+  for (i = 0; i < tokens.length; i++) {
+    tok = tokens[i];
+    if (tok === "") { continue; }
+    any = true;
+    k = keyOf(tok);
+    if (k === "ech" || k === "fm" || k === "cs") { continue; }   // every copy removed, the new value is added once below
+    if (k === "fp") {
+      if (fpAt === -1) { fpAt = kept.length; kept.push("fp=" + fp); }
+      continue;
+    }
+    if (k === "security") {
+      secVals.push(compareValue(tok));
+      if (secAt === -1) { secAt = kept.length; kept.push(tok); }
+      continue;
+    }
+    if (k === "host") { hasHost = true; if (!hostVal) { hostVal = rawValue(tok); } }
+    if (k === "sni") { hasSni = true; if (!sniVal) { sniVal = rawValue(tok); } }
+    if (k === "type") { typeVal = compareValue(tok); }
+    if (k === "alpn") {
+      if (o.alpnAuto) {
+        if (alpnAt === -1) { alpnAt = kept.length; kept.push("alpn="); }
+        continue;
+      }
+      hasAlpn = true;
+    }
+    if (k === "encryption" && encAt === -1) { encAt = kept.length; }
+    kept.push(tok);
+  }
+  if (!any) { return { texts: [], state: "incomplete" }; }
+
+  var isTrojan = /^trojan:/i.test(link);
+  for (i = 1; i < secVals.length; i++) {
+    if (secVals[i] !== secVals[0]) { return { texts: [], state: "invalid" }; }  // conflicting security values
+  }
+  var security = secVals.length ? secVals[0] : (isTrojan ? "tls" : "");
+
+  var converted = false;
+  if (security !== "tls") {
+    if (security !== "" && security !== "none") { return { texts: [], state: "othersec" }; }
+    if (!o.convert) { return { texts: [], state: "notls" }; }
+    converted = true;
+  }
+
+  var needPorts = converted || o.portsAll;
+  if (needPorts && !ports.length) { return { texts: [], state: "noports" }; }
+
+  // an IPv4 config only ever gets IPv4 addresses and an IPv6 config only IPv6 (a config with a domain takes what the setting offers)
+  var srcFam = addrFamily(p.host);
+  if (allAddrs.length && srcFam !== "name") {
+    addrs = [];
+    for (i = 0; i < allAddrs.length; i++) { if (addrFamily(allAddrs[i]) === srcFam) { addrs.push(allAddrs[i]); } }
+    if (!addrs.length) { return { texts: [], state: "noip" }; }
+  }
+
+  var net = typeVal || "tcp";
+  var domain = sniVal || hostVal || (isIpLiteral(p.host) ? "" : p.host);   // what must stay as SNI / Host when the address changes
+  if (addrs.length && !domain) { return { texts: [], state: "noname" }; }
+
+  if (converted) {
+    if (secAt !== -1) { kept[secAt] = "security=tls"; } else { kept.push("security=tls"); }
+    if (!hasSni) {
+      var sni = hostVal;
+      if (!sni && !isIpLiteral(p.host)) { sni = p.host; }
+      if (sni) { kept.push("sni=" + sni); hasSni = true; }
+    }
+  }
+  if (addrs.length) {
+    if (!hasSni) { kept.push("sni=" + domain); hasSni = true; }
+    if (!hasHost && /^(ws|httpupgrade|xhttp|splithttp|h2|http)$/.test(net)) { kept.push("host=" + domain); }
+  }
+  if (alpnAt !== -1) { kept[alpnAt] = "alpn=" + alpnFor(net); }
+  else if (o.alpnAuto || (converted && !hasAlpn)) { kept.push("alpn=" + alpnFor(net)); }
+
+  // the query with or without ECH (ECH goes right after fp, where the app puts it; final mask after encryption; cipher suites first)
+  function assemble(withEch) {
+    var arr = kept.slice(), fa = fpAt, ea = encAt;
+    if (fa === -1) { arr.push("fp=" + fp); fa = arr.length - 1; }
+    if (withEch) {
+      arr.splice(fa + 1, 0, "ech=" + safeEnc(o.ech));
+      if (ea > fa) { ea++; }
+    }
+    if (o.fm) { arr.splice((ea !== -1 ? ea : fa) + 1, 0, "fm=" + o.fm); }
+    if (o.cs) { arr.unshift("cs=" + o.cs); }
+    return arr.join("&");
+  }
+  var queryEch = assemble(!!o.ech), queryPlain = o.ech ? assemble(false) : queryEch, echDropped = 0;
+  frag = asciiFrag(frag);
+
+  var hosts = addrs.length ? addrs : [null], texts = [], hi, pp, text, tag, query;
+  for (hi = 0; hi < hosts.length; hi++) {
+    pp = hosts[hi] === null ? p : { scheme: p.scheme, user: p.user, host: hosts[hi], port: p.port };
+    tag = hosts.length > 1 ? addrLabel(hosts[hi]) : "";
+    // ECH is never put on a link whose address is IPv6
+    if (o.ech && addrFamily(pp.host) === "v6") { query = queryPlain; } else { query = queryEch; }
+    if (!needPorts) {
+      text = (hosts[hi] === null ? baseStr : withPort(pp, p.port)) + "?" + query + frag;
+      texts.push(tag ? appendTag(text, tag) : text);
+      if (query === queryPlain && o.ech) { echDropped++; }
+    } else {
+      for (i = 0; i < ports.length; i++) {
+        text = withPort(pp, ports[i]) + "?" + query + renameFrag(frag, ports[i], ports.length > 1);
+        texts.push(tag ? appendTag(text, tag) : text);
+        if (query === queryPlain && o.ech) { echDropped++; }
+      }
+    }
+  }
+  return { texts: texts, state: converted ? "converted" : "enhanced", echDropped: echDropped };
+}
+
+// strict Base64 (standard or URL-safe, padding optional). Returns the UTF-8 text, or null if anything is off.
+function b64decodeStrict(s) {
+  s = s.replace(/\s+/g, "");
+  var m = s.match(/^([A-Za-z0-9+\/_\-]+)(={0,2})$/);
+  if (!m) { return null; }
+  var body = m[1], pad = m[2].length;
+  if (/[+\/]/.test(body) && /[_\-]/.test(body)) { return null; }   // mixed alphabets
+  body = body.replace(/-/g, "+").replace(/_/g, "/");
+  if (body.length % 4 === 1) { return null; }                       // cannot be valid Base64
+  if (pad && (body.length + pad) % 4 !== 0) { return null; }        // padding does not match
+  while (body.length % 4) { body += "="; }
+  var bin;
+  try { bin = atob(body); } catch (e) { return null; }
+  try {
+    if (typeof TextDecoder !== "undefined" && typeof Uint8Array !== "undefined") {
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) { bytes[i] = bin.charCodeAt(i); }
+      return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    }
+    return decodeURIComponent(escape(bin));
+  } catch (e2) { return null; }
+}
+
+// UTF-8 safe Base64 for the "copy as subscription" button
+function b64encodeUtf8(str) {
+  var bin = "", i;
+  if (typeof TextEncoder !== "undefined") {
+    var bytes = new TextEncoder().encode(str);
+    for (i = 0; i < bytes.length; i++) { bin += String.fromCharCode(bytes[i]); }
+  } else {
+    bin = unescape(safeEnc(str));
+  }
+  return btoa(bin);
+}
+
+// walks the text line by line; plain links are kept, Base64 blobs are decoded (up to MAX_B64_DEPTH layers).
+// returns [{ kind: link | unknown | badb64 | deep, text }]
+function extractItems(text, depth) {
+  var items = [];
+  var lines = text.split(/\r?\n/);
+  for (var i = 0; i < lines.length; i++) {
+    var l = trim(lines[i]);
+    if (!l) { continue; }
+    if (/^[a-z][a-z0-9+.\-]*:\/\//i.test(l)) {
+      items.push({ kind: /^https?:\/\//i.test(l) ? "unknown" : "link", text: l });
+      continue;
+    }
+    if (!/^[A-Za-z0-9+\/_\-]{16,}={0,2}$/.test(l)) { items.push({ kind: "unknown", text: l }); continue; }
+    if (depth >= MAX_B64_DEPTH) { items.push({ kind: "deep", text: l }); continue; }
+    var decoded = b64decodeStrict(l);
+    if (decoded === null) { items.push({ kind: "badb64", text: l }); continue; }
+    var inner = extractItems(decoded, depth + 1), hasLink = false, bad = [], j;
+    for (j = 0; j < inner.length; j++) {
+      if (inner[j].kind === "link") { hasLink = true; }
+      if (inner[j].kind === "badb64" || inner[j].kind === "deep") { bad.push(inner[j]); }
+    }
+    if (hasLink) { items = items.concat(inner); }
+    else if (bad.length) { items = items.concat(bad); }
+    else { items.push({ kind: "unknown", text: l }); }
+  }
+  return items;
+}
+
+// --- UI ---
+var STATE_ORDER = ["notls", "noports", "noname", "noip", "othersec", "protocol", "invalid", "incomplete", "badb64", "deep", "unknown"];
+var STR = {
+  en: {
+    title: "ECH modifier",
+    themeDark: "Dark",
+    themeLight: "Light",
+    sub: "Paste a subscription link, the subscription text, plain configs, or Xray JSON.",
+    lblEch: "ECH value",
+    echCustom: "Custom value",
+    echPlaceholder: "Type your ECH value",
+    lblFp: "Fingerprint",
+    convert: "Turn non-TLS configs (security=none) into TLS. ECH only works over TLS, so without this those configs are left alone.",
+    lblFm: "Final mask (JSON)",
+    lblCs: "Cipher suites",
+    badFm: "The final mask is not valid JSON.",
+    lblProfile: "Preset for your network",
+    prof_custom: "Custom (set everything yourself)",
+    prof_mci_ech: "Hamrah-e Avval: CDN + ECH",
+    prof_mci_v6: "Hamrah-e Avval: CDN over IPv6",
+    prof_mci_v6ff: "Hamrah-e Avval: CDN over IPv6, filtered domain (adds F&F)",
+    prof_irancell_ff: "Irancell: CDN with F&F",
+    profileHint: "A preset fills in the fields below and you can still change them. A SIM and the firewall in front of it can belong to different operators, so if one preset does not connect, try another. The test pack below can build all of them at once. These recipes fight firewalls that keep changing, so edit the values when one stops working.",
+    useEch: "Add ECH",
+    echExclusive: "ECH is never used together with the final mask or cipher suites: turning ECH on clears and locks them, and they are removed from the links. ECH is also never added to a config whose address is IPv6.",
+    famRule: "Each config only gets IPs of its own type: a config with an IPv4 address gets IPv4 IPs, one with an IPv6 address gets IPv6 IPs, and a config with a domain gets the type the setting asks for. A config with no IP of its own type is skipped and listed in the report.",
+    optNone: "None (removed from the link)",
+    csFull: "Full list (the older default)",
+    lblAddrFam: "Address type",
+    famAny: "Any (IPv4, IPv6 or a domain)",
+    famV4: "IPv4 only",
+    famV6: "IPv6 only",
+    noAddr: "Address replacement is on, but the list has no IP of the type this setting needs. Add one, or change the address type.",
+    addrOn: "Replace the config's address with the clean IPs below (one copy per IP). Only for configs behind Cloudflare.",
+    lblClean: "Clean IPs (one per line)",
+    addrHint: "You can paste IPv4 and IPv6 together: every preset, and the address type setting, takes only the IPs of its own type from this one list (an IPv4 preset never gets an IPv6 IP, and the other way round). Domains are accepted only when the type is Any. The config's own domain stays as SNI and Host, so it still reaches its own site, and configs with no domain to keep are skipped. The two examples are placeholders, use your own clean IPs.",
+    ffMode: "Fragment mode (F&F): no ECH, fingerprint unsafe, final mask and cipher suites on.",
+    ffHint: "Ticking this fills in the fields below, and you can still edit the final mask and cipher suites. The fingerprint stays locked to unsafe while it is on. Unticking it clears them and turns ECH back on.",
+    alpnAuto: "Set ALPN to fit the transport: http/1.1 for ws, h2,http/1.1 for xhttp and grpc. Only used with F&F, so it stays off and locked while ECH is on or no F&F field is set.",
+    packByProfile: "One copy per preset",
+    packByEch: "One copy per ECH value",
+    packMode: "Test pack: make several copies of every config, so you can see which one connects on your network.",
+    packHint: "Every checked item makes its own copy of each config, with its name added to the config's name. Import them all and see which ones connect. With presets, the fields above are ignored (ports and the TLS conversion still apply).",
+    packEmpty: "Select at least one item for the test pack.",
+    runPack: "Extract and build test pack",
+    tooMany: "That would make {n} configs, which is too many. Select fewer ports, addresses or presets.",
+    lblPorts: "TLS ports",
+    portsHint: "Each selected port makes its own copy of the config.",
+    portsAll: "Also apply the ports to configs that already use TLS. Uncheck this to keep their own port.",
+    lblIn: "Input",
+    run: "Extract and apply",
+    paste: "Paste and run",
+    clear: "Clear all",
+    lblOut: "Result",
+    copy: "Copy configs",
+    copy64: "Copy as subscription",
+    dlJson: "Download JSON (iPhone)",
+    copyJson: "Copy JSON",
+    jsonCopiedOne: "JSON of this config copied.",
+    jsonHintIos: "The JSON file is an array of full Xray configs, one per link in the result, for iPhone apps that import Xray JSON.",
+    jsonNone: "No vless or trojan config could be turned into JSON.",
+    jsonDone: function (n, s) { return "JSON file ready: " + n + " configs" + (s ? ", " + s + " skipped" : "") + "."; },
+    jsonCopied: function (n, s) { return "JSON copied: " + n + " configs" + (s ? ", " + s + " skipped" : "") + "."; },
+    lblCards: "Configs (tap QR to show a code)",
+    lblReport: "Report for every line",
+    reportMore: "... and {n} more",
+    qr: "QR",
+    hideQr: "Hide QR",
+    copyOne: "Copy",
+    qrTooLong: "This config is too long for a QR code.",
+    pasteFirst: "Paste something first.",
+    pasteBlocked: "The browser does not allow reading the clipboard here. The input box is ready: long-press it, choose Paste, and it will run by itself.",
+    nothingFound: "No configs found. Paste the subscription text or the configs themselves.",
+    badJson: "This looks like JSON but it is not valid, so it may be cut off. Copy it again in full.",
+    jsonNoConfigs: "The JSON has no vless or trojan config in it.",
+    openFile: "Open file",
+    openSub: "Open link in browser",
+    blockedOpen: "The browser did not allow reading this link from the page. Tap \"Open link in browser\", copy the text it shows, come back and tap Paste and run.",
+    fileErr: "The file could not be read.",
+    fileHint: "Open file reads a .json or .txt file from your device. If nothing happens, your browser blocks file selection (common in in-app browsers). Open the page in Safari or Chrome, or paste the text instead.",
+    badB64Only: "The text looks like Base64 but could not be decoded. It may be cut off or damaged, so copy it again in full.",
+    emptyEch: "The ECH value is empty.",
+    fetching: "Fetching the subscription...",
+    serverErr: "The server answered with HTTP {n}. Open the link in your browser and paste the text here.",
+    emptyResp: "The server answered but sent an empty response.",
+    blocked: "The request failed. Either the network is down or the server's CORS policy blocked it, and the browser does not say which. Open the link in your browser, copy the text it shows, and paste that here.",
+    timeout: "The server took too long to answer. Try again, or open the link in your browser and paste the text here.",
+    unexpected: "Something unexpected went wrong. Nothing was changed.",
+    nothingCopy: "Nothing to copy yet.",
+    copied: "Configs copied.",
+    copiedOne: "Config copied.",
+    copied64: "Subscription text copied.",
+    states: {
+      enhanced: "enhanced",
+      converted: "switched to TLS",
+      notls: "no TLS, left alone",
+      noports: "skipped, no TLS port is selected",
+      noname: "no domain to keep as SNI for the new address, skipped",
+      noip: "no clean IP of its own type (IPv4 or IPv6) in the list, skipped",
+      othersec: "other security type, left alone",
+      protocol: "not vless or trojan, skipped",
+      invalid: "invalid link, skipped",
+      incomplete: "cut off, skipped",
+      badb64: "invalid Base64, skipped",
+      deep: "Base64 nested too deep, skipped",
+      unknown: "not recognized, skipped"
+    },
+    sum: function (c) {
+      var m = c.total + " found, " + c.enh + " enhanced";
+      if (c.converted) { m += " (" + c.converted + " switched to TLS)"; }
+      if (c.out !== c.enh) { m += ", " + c.out + " configs in the result"; }
+      if (c.dup) { m += ", " + c.dup + " duplicates removed"; }
+      if (c.badAddr) { m += ", " + c.badAddr + " addresses ignored (not valid)"; }
+      if (c.otherAddr) { m += ", " + c.otherAddr + " addresses of the other type not used"; }
+      if (c.echDropped) { m += ", ECH not added to " + c.echDropped + " IPv6 configs"; }
+      if (c.skipProf.length) { m += ", presets skipped because the list has no IP of their type: " + c.skipProf.join(", "); }
+      for (var i = 0; i < STATE_ORDER.length; i++) {
+        if (c[STATE_ORDER[i]]) { m += ", " + c[STATE_ORDER[i]] + " " + STR.en.states[STATE_ORDER[i]]; }
+      }
+      return m + ".";
+    }
+  },
+  fa: {
+    title: "ECH modifier",
+    themeDark: "تاریک",
+    themeLight: "روشن",
+    sub: "لینک اشتراک، متن اشتراک، خود کانفیگ‌ها یا JSON مربوط به Xray را وارد کنید.",
+    lblEch: "مقدار ECH",
+    echCustom: "مقدار دلخواه",
+    echPlaceholder: "مقدار ECH خودتان را بنویسید",
+    lblFp: "اثر انگشت (Fingerprint)",
+    convert: "کانفیگ‌های بدون TLS (security=none) را به TLS تبدیل کن. ECH فقط روی TLS کار می‌کند و بدون این گزینه، آن کانفیگ‌ها دست‌نخورده می‌مانند.",
+    lblFm: "Final mask (به شکل JSON)",
+    lblCs: "Cipher suites",
+    badFm: "Final mask به شکل JSON معتبر نیست.",
+    lblProfile: "پریست برای شبکه‌ی شما",
+    prof_custom: "دلخواه (همه‌چیز را خودتان تنظیم کنید)",
+    prof_mci_ech: "همراه اول: CDN با ECH",
+    prof_mci_v6: "همراه اول: CDN روی IPv6",
+    prof_mci_v6ff: "همراه اول: CDN روی IPv6، دامنه‌ی فیلترشده (با F&F)",
+    prof_irancell_ff: "ایرانسل: CDN با F&F",
+    profileHint: "پریست فیلدهای پایین را پر می‌کند و باز هم می‌توانید تغییرشان بدهید. ممکن است سیم‌کارت یک اپراتور باشد و فایروال جلوی آن مال اپراتور دیگر، پس اگر یک پریست وصل نشد، بعدی را امتحان کنید. بسته‌ی تست پایین می‌تواند همه را یک‌جا بسازد. این روش‌ها با فایروال‌هایی طرفند که مدام عوض می‌شوند، پس وقتی یکی از کار افتاد مقدارها را ویرایش کنید.",
+    useEch: "ECH اضافه شود",
+    echExclusive: "ECH هیچ‌وقت همراه final mask یا cipher suites استفاده نمی‌شود: با روشن کردن ECH این دو پاک و قفل می‌شوند و از لینک‌ها هم حذف می‌شوند. ECH هیچ‌وقت روی کانفیگی که آدرسش IPv6 است هم اضافه نمی‌شود.",
+    famRule: "هر کانفیگ فقط آی‌پی هم‌نوع خودش را می‌گیرد: کانفیگی که آدرسش IPv4 است آی‌پی IPv4، کانفیگ IPv6 آی‌پی IPv6، و کانفیگی که آدرسش دامنه است همان نوعی را که تنظیم می‌خواهد. کانفیگی که در لیست آی‌پی هم‌نوع خودش را ندارد رد می‌شود و در گزارش می‌آید.",
+    optNone: "هیچ (از لینک حذف می‌شود)",
+    csFull: "لیست کامل (پیش‌فرض قبلی)",
+    lblAddrFam: "نوع آدرس",
+    famAny: "هرکدام (IPv4، IPv6 یا دامنه)",
+    famV4: "فقط IPv4",
+    famV6: "فقط IPv6",
+    noAddr: "جایگزینی آدرس روشن است ولی در لیست آی‌پی‌ای از نوع موردنیاز این تنظیم نیست. یکی اضافه کنید یا نوع آدرس را عوض کنید.",
+    addrOn: "آدرس کانفیگ را با آی‌پی‌های سالم (Clean IP) زیر عوض کن (برای هر آی‌پی یک نسخه). فقط برای کانفیگ‌های پشت Cloudflare.",
+    lblClean: "آی‌پی‌های سالم (Clean IP)، هر خط یکی",
+    addrHint: "IPv4 و IPv6 را می‌توانی با هم بچسبانی: هر پریست و تنظیم «نوع آدرس» فقط آی‌پی‌های نوع خودش را از همین یک لیست برمی‌دارد (پریست IPv4 هیچ‌وقت آی‌پی IPv6 نمی‌گیرد و برعکس). دامنه فقط وقتی پذیرفته می‌شود که نوع آدرس «هرکدام» باشد. دامنه‌ی خود کانفیگ به‌عنوان SNI و Host می‌ماند تا باز هم به سایت خودش برسد و کانفیگی که دامنه‌ای برای نگه‌داشتن ندارد رد می‌شود. دو نمونه‌ی داخل کادر فقط جای‌نگه‌دارند، آی‌پی‌های سالم خودتان را بگذارید.",
+    ffMode: "حالت فرگمنت (F&F): بدون ECH، fingerprint روی unsafe، final mask و cipher suites روشن.",
+    ffHint: "با تیک‌زدن، فیلدهای پایین پر می‌شوند و باز هم می‌توانید final mask و cipher suites را ویرایش کنید. تا وقتی روشن است fingerprint روی unsafe قفل می‌ماند. با برداشتن تیک، این‌ها پاک می‌شوند و ECH دوباره روشن می‌شود.",
+    alpnAuto: "ALPN را مطابق نوع انتقال بگذار: http/1.1 برای ws و h2,http/1.1 برای xhttp و grpc. فقط برای F&F است، پس تا وقتی ECH روشن است یا هیچ فیلد F&F تنظیم نشده، خاموش و قفل می‌ماند.",
+    packByProfile: "یک نسخه برای هر پریست",
+    packByEch: "یک نسخه برای هر مقدار ECH",
+    packMode: "بسته‌ی تست: از هر کانفیگ چند نسخه بساز تا ببینی روی شبکه‌ی تو کدام وصل می‌شود.",
+    packHint: "برای هر مورد تیک‌خورده یک نسخه از هر کانفیگ ساخته می‌شود و نام آن مورد به اسم کانفیگ اضافه می‌شود. همه را import کن و ببین کدام وصل می‌شود. در حالت پریست، فیلدهای بالا نادیده گرفته می‌شوند (پورت‌ها و تبدیل به TLS همچنان اعمال می‌شوند).",
+    packEmpty: "حداقل یک مورد برای بسته‌ی تست انتخاب کنید.",
+    runPack: "استخراج و ساخت بسته‌ی تست",
+    tooMany: "این کار {n} کانفیگ می‌سازد که زیادی است. پورت، آدرس یا پریست کمتری انتخاب کنید.",
+    lblPorts: "پورت‌های TLS",
+    portsHint: "برای هر پورتی که تیک بزنید یک نسخه از کانفیگ ساخته می‌شود.",
+    portsAll: "پورت‌ها را روی کانفیگ‌هایی که از قبل TLS دارند هم اعمال کن. تیک را بردارید تا پورت خودشان بماند.",
+    lblIn: "ورودی",
+    run: "استخراج و اعمال",
+    paste: "چسباندن و اجرا",
+    clear: "پاک کردن همه",
+    lblOut: "نتیجه",
+    copy: "کپی کانفیگ‌ها",
+    copy64: "کپی به شکل اشتراک",
+    dlJson: "دانلود JSON (آیفون)",
+    copyJson: "کپی JSON",
+    jsonCopiedOne: "JSON این کانفیگ کپی شد.",
+    jsonHintIos: "فایل JSON آرایه‌ای از کانفیگ‌های کامل Xray است، یکی برای هر لینکِ نتیجه، مخصوص برنامه‌های آیفونی که JSON مربوط به Xray را وارد می‌کنند.",
+    jsonNone: "هیچ کانفیگ vless یا trojan ای برای تبدیل به JSON پیدا نشد.",
+    jsonDone: function (n, s) { return "فایل JSON آماده شد: " + n + " کانفیگ" + (s ? "، " + s + " مورد رد شد" : "") + "."; },
+    jsonCopied: function (n, s) { return "JSON کپی شد: " + n + " کانفیگ" + (s ? "، " + s + " مورد رد شد" : "") + "."; },
+    lblCards: "کانفیگ‌ها (برای دیدن کد، دکمه QR را بزنید)",
+    lblReport: "گزارش هر خط",
+    reportMore: "... و {n} مورد دیگر",
+    qr: "QR",
+    hideQr: "بستن QR",
+    copyOne: "کپی",
+    qrTooLong: "این کانفیگ برای QR زیادی طولانی است.",
+    pasteFirst: "اول چیزی وارد کنید.",
+    pasteBlocked: "مرورگر اجازه‌ی خواندن کلیپ‌بورد را اینجا نمی‌دهد. کادر ورودی آماده است: روی آن نگه دارید و Paste را بزنید، خودکار اجرا می‌شود.",
+    nothingFound: "کانفیگی پیدا نشد. متن اشتراک یا خود کانفیگ‌ها را وارد کنید.",
+    badJson: "این متن شبیه JSON است ولی معتبر نیست و احتمالاً ناقص است. دوباره و کامل کپی کنید.",
+    jsonNoConfigs: "در این JSON هیچ کانفیگ vless یا trojan ای پیدا نشد.",
+    openFile: "باز کردن فایل",
+    openSub: "باز کردن لینک در مرورگر",
+    blockedOpen: "مرورگر اجازه نداد این لینک از داخل صفحه خوانده شود. «باز کردن لینک در مرورگر» را بزن، متنی که نشان می‌دهد را کپی کن، برگرد و «چسباندن و اجرا» را بزن.",
+    fileErr: "خواندن فایل ممکن نشد.",
+    fileHint: "«باز کردن فایل» یک فایل json یا txt را از دستگاه می‌خواند. اگر هیچ اتفاقی نیفتاد، مرورگر انتخاب فایل را بسته است (در مرورگرهای داخل برنامه‌ها رایج است). صفحه را در Safari یا Chrome باز کنید یا متن را بچسبانید.",
+    badB64Only: "متن شبیه Base64 است ولی دیکود نشد. احتمالاً ناقص یا خراب است؛ دوباره و کامل کپی کنید.",
+    emptyEch: "مقدار ECH خالی است.",
+    fetching: "در حال دریافت اشتراک...",
+    serverErr: "سرور با خطای HTTP {n} پاسخ داد. لینک را در مرورگر باز کنید و متن آن را اینجا وارد کنید.",
+    emptyResp: "سرور پاسخ داد ولی پاسخش خالی بود.",
+    blocked: "درخواست ناموفق بود. یا شبکه قطع است یا سیاست CORS سرور آن را بسته، و مرورگر نمی‌گوید کدام. لینک را در مرورگر باز کنید، متنی که نشان می‌دهد را کپی کنید و اینجا وارد کنید.",
+    timeout: "سرور دیر جواب داد. دوباره امتحان کنید یا لینک را در مرورگر باز کنید و متنش را اینجا وارد کنید.",
+    unexpected: "مشکل غیرمنتظره‌ای پیش آمد. چیزی تغییر نکرد.",
+    nothingCopy: "هنوز چیزی برای کپی وجود ندارد.",
+    copied: "کانفیگ‌ها کپی شد.",
+    copiedOne: "کانفیگ کپی شد.",
+    copied64: "متن اشتراک کپی شد.",
+    states: {
+      enhanced: "پردازش شد",
+      converted: "به TLS تبدیل شد",
+      notls: "بدون TLS، دست‌نخورده",
+      noports: "رد شد، پورت TLS تیک نخورده",
+      noname: "دامنه‌ای برای SNI آدرس جدید نیست، رد شد",
+      noip: "آی‌پی سالمی هم‌نوع آدرس خودش (IPv4 یا IPv6) در لیست نیست، رد شد",
+      othersec: "نوع امنیت دیگر، دست‌نخورده",
+      protocol: "vless یا trojan نیست، رد شد",
+      invalid: "لینک نامعتبر، رد شد",
+      incomplete: "ناقص بود، رد شد",
+      badb64: "Base64 نامعتبر، رد شد",
+      deep: "Base64 بیش‌ازحد تودرتو، رد شد",
+      unknown: "شناخته نشد، رد شد"
+    },
+    sum: function (c) {
+      var m = c.total + " کانفیگ پیدا شد، " + c.enh + " مورد پردازش شد";
+      if (c.converted) { m += " (" + c.converted + " مورد به TLS تبدیل شد)"; }
+      if (c.out !== c.enh) { m += "، " + c.out + " کانفیگ در نتیجه هست"; }
+      if (c.dup) { m += "، " + c.dup + " مورد تکراری حذف شد"; }
+      if (c.badAddr) { m += "، " + c.badAddr + " آدرس نامعتبر نادیده گرفته شد"; }
+      if (c.otherAddr) { m += "، " + c.otherAddr + " آدرس از نوع دیگر استفاده نشد"; }
+      if (c.echDropped) { m += "، ECH به " + c.echDropped + " کانفیگ IPv6 اضافه نشد"; }
+      if (c.skipProf.length) { m += "، پریست‌های ردشده چون در لیست آی‌پی‌ای از نوع‌شان نبود: " + c.skipProf.join("، "); }
+      for (var i = 0; i < STATE_ORDER.length; i++) {
+        if (c[STATE_ORDER[i]]) { m += "، " + c[STATE_ORDER[i]] + " مورد " + STR.fa.states[STATE_ORDER[i]]; }
+      }
+      return m + ".";
+    }
+  }
+};
+
+var LANG = "en";
+var statusFn = null;
+var cardState = [];   // { text, qrOpen } per card, so a language switch can redraw labels
+
+function $(id) { return document.getElementById(id); }
+function t(k) { return STR[LANG][k]; }
+
+function renderStatus() { $("status").textContent = statusFn ? statusFn() : ""; }
+function setStatus(fn) { statusFn = fn; renderStatus(); }
+function say(key) { setStatus(function () { return t(key); }); }
+
+// ---- remembered settings ----
+var ECH_PRESETS = ["cloudflare-ech.com+udp://1.1.1.1", "crypto.cloudflare.com+udp://1.1.1.1", "cloudflare-ech.com+udp://1.0.0.1",
+  "cloudflare-ech.com+udp://8.8.8.8", "cloudflare-ech.com+https://1.1.1.1/dns-query", "cloudflare-ech.com+https://8.8.8.8/dns-query"];
+var PACK_DEFAULT = [0, 4, 5];   // plain 1.1.1.1 plus the two DoH servers
+
+// values given for the firewall recipes
+var FM_TLSHELLO = '{"tcp": [{"type": "fragment", "settings": {"packets": "tlshello", "lengths": ["0", "104", "1"], "delays": ["0"], "maxSplit": "0"}},{"type": "fragment", "settings": {"packets": "1-1", "lengths": ["114", "1"], "delays": ["1"], "maxSplit": "11"}}]}';
+var CS_SEMIPYTHON = "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA:TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA:TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256:TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256";
+var DEFAULT_FM = FM_TLSHELLO;
+var DEFAULT_CS = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA:TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA:TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256:TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256";
+
+// Presets. They only fill in the fields, and the test pack can build every one of them at once.
+var PROFILES = [
+  { id: "mci_ech", tag: "MCI ECH", useEch: true, ech: "cloudflare-ech.com+udp://1.1.1.1", fp: "chrome", fm: "none", cs: "none", addrOn: true, fam: "v4", alpnAuto: false },
+  { id: "mci_v6", tag: "MCI IPv6", useEch: false, ech: "", fp: "chrome", fm: "none", cs: "none", addrOn: true, fam: "v6", alpnAuto: false },
+  { id: "mci_v6ff", tag: "MCI IPv6 F&F", useEch: false, ech: "", fp: "chrome", fm: "tlshello", cs: "none", addrOn: true, fam: "v6", alpnAuto: false },
+  { id: "irancell_ff", tag: "Irancell F&F", useEch: false, ech: "", fp: "unsafe", fm: "tlshello", cs: "semipython", addrOn: true, fam: "v4", alpnAuto: true }
+];
+var PROFILE_PACK_DEFAULT = ["mci_ech", "mci_v6", "irancell_ff"];
+// One clean-IP list for everything. Each preset (and the address-type setting) takes only the IPs of its own type from it.
+// The two examples are the ones from the recipes, replace them with your own clean IPs.
+var DEFAULT_ADDRS = "188.114.97.6\n2a06:98c1:3121::7";
+function profileById(id) {
+  for (var i = 0; i < PROFILES.length; i++) { if (PROFILES[i].id === id) { return PROFILES[i]; } }
+  return null;
+}
+
+function buildPackChips() {
+  var host = $("packChips"), i, lab, cb, tx;
+  for (i = 0; i < ECH_PRESETS.length; i++) {
+    lab = document.createElement("label"); cb = document.createElement("input"); tx = document.createElement("span");
+    cb.type = "checkbox";
+    cb.name = "packEch";
+    cb.value = ECH_PRESETS[i];
+    cb.checked = PACK_DEFAULT.indexOf(i) !== -1;
+    tx.textContent = ECH_PRESETS[i];
+    lab.appendChild(cb);
+    lab.appendChild(tx);
+    host.appendChild(lab);
+  }
+  host = $("profChips");
+  for (i = 0; i < PROFILES.length; i++) {
+    lab = document.createElement("label"); cb = document.createElement("input"); tx = document.createElement("span");
+    cb.type = "checkbox";
+    cb.name = "packProf";
+    cb.value = PROFILES[i].id;
+    cb.checked = PROFILE_PACK_DEFAULT.indexOf(PROFILES[i].id) !== -1;
+    tx.setAttribute("data-i", "prof_" + PROFILES[i].id);
+    lab.appendChild(cb);
+    lab.appendChild(tx);
+    host.appendChild(lab);
+  }
+}
+function checkedValues(name) {
+  var els = document.querySelectorAll("input[name=" + name + "]"), p = [];
+  for (var i = 0; i < els.length; i++) { if (els[i].checked) { p.push(els[i].value); } }
+  return p;
+}
+function packList() { return checkedValues("packEch"); }
+function profList() { return checkedValues("packProf"); }
+function portList() { return checkedValues("port"); }
+
+function saveSettings() {
+  try {
+    localStorage.setItem("echSettings", JSON.stringify({
+      v: 2, profile: $("profile").value, useEch: $("useEch").checked, ech: $("ech").value, fp: $("fp").value,
+      fmSel: $("fmSel").value, fmText: $("fmText").value, csSel: $("csSel").value, csText: $("csText").value,
+      addrOn: $("addrOn").checked, addrFam: $("addrFam").value, addrText: $("addrText").value, alpnAuto: $("alpnAuto").checked,
+      convert: $("convert").checked, ports: portList(), portsAll: $("portsAll").checked,
+      pack: $("packMode").checked, packType: $("packType").value, packList: packList(), profList: profList()
+    }));
+  } catch (e) {}
+}
+
+function syncPreset() {
+  var sel = $("echPreset"), v = trim($("ech").value), found = "__custom__";
+  for (var i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === v) { found = v; }
+  }
+  sel.value = found;
+  $("ech").style.display = (found === "__custom__") ? "block" : "none";
+}
+
+var FIELD_IDS = ["profile", "useEch", "echPreset", "ech", "fp", "fmSel", "fmText", "csSel", "csText", "addrOn", "addrFam", "addrText", "alpnAuto"];
+function updateUi() {
+  var pack = $("packMode").checked, pt = $("packType").value, byProf = pack && pt === "profile", byEch = pack && pt === "ech", i;
+  for (i = 0; i < FIELD_IDS.length; i++) { $(FIELD_IDS[i]).disabled = false; }
+  if (byProf) { for (i = 0; i < FIELD_IDS.length; i++) { $(FIELD_IDS[i]).disabled = true; } $("addrText").disabled = false; }
+  if (byEch) { $("useEch").disabled = true; $("echPreset").disabled = true; $("ech").disabled = true; }
+  if (!byProf && (byEch || $("useEch").checked)) {
+    // ECH is never combined with the F&F fields: they are cleared and locked while ECH is on
+    $("fmSel").value = "none"; $("csSel").value = "none";
+    $("fmSel").disabled = true; $("csSel").disabled = true;
+  }
+  $("packBox").style.display = pack ? "block" : "none";
+  $("packChips").style.display = byEch ? "block" : "none";
+  $("profChips").style.display = byProf ? "block" : "none";
+  $("echBox").style.display = ($("useEch").checked && !pack) ? "block" : "none";
+  $("fmText").style.display = $("fmSel").value === "custom" ? "block" : "none";
+  $("csText").style.display = $("csSel").value === "custom" ? "block" : "none";
+  $("addrBox").style.display = ($("addrOn").checked || byProf) ? "block" : "none";
+  $("addrFamBox").style.display = byProf ? "none" : "block";
+  // ECH and the unsafe fingerprint never go together (ECH wants chrome)
+  if (!byProf && (byEch || $("useEch").checked) && $("fp").value === "unsafe") { $("fp").value = "chrome"; }
+  var ffFields = $("fmSel").value !== "none" || $("csSel").value !== "none";
+  var ff = !byProf && !byEch && !$("useEch").checked && ffFields && $("fp").value === "unsafe";
+  $("ffMode").checked = ff;
+  $("ffMode").disabled = byProf || byEch;
+  if (ff) { $("fp").disabled = true; }
+  // the ALPN fix only matters for F&F
+  if (!byProf) {
+    var alpnOk = !byEch && !$("useEch").checked && ffFields;
+    if (!alpnOk) { $("alpnAuto").checked = false; }
+    $("alpnAuto").disabled = !alpnOk;
+  }
+  var runKey = pack ? "runPack" : "run";
+  $("run").setAttribute("data-i", runKey);
+  $("run").textContent = t(runKey);
+}
+
+function applyProfile(id) {
+  var p = profileById(id);
+  if (!p) { return; }
+  $("useEch").checked = p.useEch;
+  if (p.ech) { $("ech").value = p.ech; }
+  $("fp").value = p.fp;
+  $("fmSel").value = p.fm;
+  $("csSel").value = p.cs;
+  $("addrOn").checked = p.addrOn;
+  $("addrFam").value = p.fam || "any";
+  if (!trim($("addrText").value)) { $("addrText").value = DEFAULT_ADDRS; }
+  $("alpnAuto").checked = p.alpnAuto;
+  syncPreset();
+  updateUi();
+}
+
+function sameJson(a, b) {
+  try { return JSON.stringify(JSON.parse(a)) === JSON.stringify(JSON.parse(b)); } catch (e) { return false; }
+}
+
+function loadSettings() {
+  $("fmText").value = DEFAULT_FM;
+  $("csText").value = DEFAULT_CS;
+  $("addrText").value = DEFAULT_ADDRS;
+  var s = null;
+  try { s = JSON.parse(localStorage.getItem("echSettings") || "null"); } catch (e) {}
+  if (!s) { syncPreset(); updateUi(); return; }
+  if (typeof s.ech === "string" && s.ech) { $("ech").value = s.ech; }
+  if (typeof s.fp === "string") { $("fp").value = s.fp; }
+  if (typeof s.convert === "boolean") { $("convert").checked = s.convert; }
+  if (typeof s.portsAll === "boolean") { $("portsAll").checked = s.portsAll; }
+  if (typeof s.pack === "boolean") { $("packMode").checked = s.pack; }
+  if (s.ports && s.ports.length !== undefined) {
+    var els = document.querySelectorAll("input[name=port]");
+    for (var i = 0; i < els.length; i++) { els[i].checked = s.ports.indexOf(els[i].value) !== -1; }
+  }
+  if (s.packList && s.packList.length !== undefined) {
+    var pk = document.querySelectorAll("input[name=packEch]");
+    for (var q = 0; q < pk.length; q++) { pk[q].checked = s.packList.indexOf(pk[q].value) !== -1; }
+  }
+  if (s.v === 2) {
+    if (typeof s.useEch === "boolean") { $("useEch").checked = s.useEch; }
+    if (typeof s.fmText === "string" && s.fmText) { $("fmText").value = s.fmText; }
+    if (typeof s.csText === "string" && s.csText) { $("csText").value = s.csText; }
+    if (s.fmSel) { $("fmSel").value = s.fmSel; }
+    if (s.csSel) { $("csSel").value = s.csSel; }
+    if (typeof s.addrOn === "boolean") { $("addrOn").checked = s.addrOn; }
+    if (s.addrFam) { $("addrFam").value = s.addrFam; }
+    if (typeof s.addrText === "string") { $("addrText").value = s.addrText; }
+    var at = trim($("addrText").value);
+    if (at === "188.114.97.6" || at === "2a06:98c1:3121::7") { $("addrText").value = DEFAULT_ADDRS; }   // older builds saved one example per preset
+    if (typeof s.alpnAuto === "boolean") { $("alpnAuto").checked = s.alpnAuto; }
+    if (s.packType) { $("packType").value = s.packType; }
+    if (s.profList && s.profList.length !== undefined) {
+      var pf = document.querySelectorAll("input[name=packProf]");
+      for (var r = 0; r < pf.length; r++) { pf[r].checked = s.profList.indexOf(pf[r].value) !== -1; }
+    }
+    if (s.profile && (s.profile === "custom" || profileById(s.profile))) { $("profile").value = s.profile; }
+  } else {
+    // settings saved by the older version: "fragment mode" becomes its own fields
+    $("packType").value = "ech";
+    if (s.mask === true) {
+      $("useEch").checked = false;
+      $("fp").value = "unsafe";
+      if (typeof s.fm === "string" && s.fm) {
+        $("fmText").value = s.fm;
+        $("fmSel").value = sameJson(s.fm, FM_TLSHELLO) ? "tlshello" : "custom";
+      }
+      if (typeof s.cs === "string" && s.cs) {
+        $("csText").value = s.cs;
+        $("csSel").value = s.cs === DEFAULT_CS ? "full" : "custom";
+      }
+    } else {
+      if (typeof s.fm === "string" && s.fm) { $("fmText").value = s.fm; }
+      if (typeof s.cs === "string" && s.cs) { $("csText").value = s.cs; }
+    }
+  }
+  syncPreset();
+  updateUi();
+}
+
+// UI (or a preset) -> the plain settings of one build
+function readSettings() {
+  return { useEch: $("useEch").checked, ech: trim($("ech").value), fp: $("fp").value, fm: $("fmSel").value, fmText: $("fmText").value,
+           cs: $("csSel").value, csText: $("csText").value, addrOn: $("addrOn").checked, addrFam: $("addrFam").value, addrText: $("addrText").value, alpnAuto: $("alpnAuto").checked };
+}
+function profileSettings(p) {
+  return { useEch: p.useEch, ech: p.ech || trim($("ech").value), fp: p.fp, fm: p.fm, fmText: $("fmText").value,
+           cs: p.cs, csText: $("csText").value, addrOn: p.addrOn, addrFam: p.fam || "any", addrText: $("addrText").value, alpnAuto: p.alpnAuto };
+}
+// settings -> options for addEch, or { err: key }
+function buildOpts(st) {
+  var fm = "", cs = "";
+  if (st.useEch) { st = Object.assign({}, st, { fm: "none", cs: "none", alpnAuto: false, fp: st.fp === "unsafe" ? "chrome" : st.fp }); }   // ECH and F&F are never used together
+  if (st.fm === "tlshello") { fm = safeEnc(JSON.stringify(JSON.parse(FM_TLSHELLO))); }
+  else if (st.fm === "custom") {
+    try { fm = safeEnc(JSON.stringify(JSON.parse(st.fmText))); } catch (e) { return { err: "badFm" }; }
+  }
+  if (st.cs === "semipython") { cs = safeEnc(CS_SEMIPYTHON.replace(/\s+/g, "")); }
+  else if (st.cs === "full") { cs = safeEnc(DEFAULT_CS.replace(/\s+/g, "")); }
+  else if (st.cs === "custom") { cs = safeEnc(st.csText.replace(/\s+/g, "")); }
+  if (st.useEch && !st.ech) { return { err: "emptyEch" }; }
+  var a = parseAddrList(st.addrOn ? st.addrText : "", st.addrFam);
+  if (st.addrOn && !a.list.length) { return { err: "noAddr" }; }
+  return {
+    opts: { ech: st.useEch ? st.ech : "", fp: st.fp, fm: fm, cs: cs, addrs: a.list, alpnAuto: !!st.alpnAuto && (fm !== "" || cs !== ""),
+            convert: $("convert").checked, ports: portList(), portsAll: $("portsAll").checked },
+    badAddr: a.bad, otherAddr: a.other
+  };
+}
+
+// ---- theme ----
+function currentTheme() { return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light"; }
+function updateThemeBtn() {
+  var dark = currentTheme() === "dark";
+  $("theme").textContent = dark ? "\u2600 " + t("themeLight") : "\u263E " + t("themeDark");
+}
+function setTheme(th) {
+  document.documentElement.setAttribute("data-theme", th);
+  try { localStorage.setItem("echTheme", th); } catch (e) {}
+  updateThemeBtn();
+}
+
+// ---- language ----
+function applyLang(l) {
+  LANG = l;
+  document.documentElement.lang = l;
+  document.documentElement.dir = (l === "fa") ? "rtl" : "ltr";
+  var els = document.querySelectorAll("[data-i]");
+  for (var i = 0; i < els.length; i++) { els[i].textContent = t(els[i].getAttribute("data-i")); }
+  var phs = document.querySelectorAll("[data-ph]");
+  for (var p = 0; p < phs.length; p++) { phs[p].setAttribute("placeholder", t(phs[p].getAttribute("data-ph"))); }
+  document.title = t("title");
+  $("langFa").className = (l === "fa") ? "on" : "";
+  $("langEn").className = (l === "en") ? "on" : "";
+  try { localStorage.setItem("echLang", l); } catch (e) {}
+  var btns = document.querySelectorAll("[data-card]");
+  for (var j = 0; j < btns.length; j++) {
+    var b = btns[j], k = b.getAttribute("data-card");
+    if (k === "copy") { b.textContent = t("copyOne"); }
+    else if (k === "json") { b.textContent = t("copyJson"); }
+    else { b.textContent = b.getAttribute("data-open") === "1" ? t("hideQr") : t("qr"); }
+  }
+  renderReport();
+  renderStatus();
+  updateThemeBtn();
+}
+
+// ---- clipboard ----
+function copyText(text, done) {
+  function fallback() {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+    done();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, fallback);
+  } else {
+    fallback();
+  }
+}
+
+// ---- result cards with QR ----
+function configName(link, n) {
+  var h = link.indexOf("#");
+  if (h !== -1) {
+    try { var nm = decodeURIComponent(link.substring(h + 1)); if (nm) { return nm; } } catch (e) {}
+  }
+  return "#" + n;
+}
+
+function drawQr(box, text) {
+  box.innerHTML = "";
+  try {
+    qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
+    var q = qrcode(0, "L");
+    q.addData(text);
+    q.make();
+    box.innerHTML = q.createSvgTag({ cellSize: 4, margin: 4, scalable: true });
+  } catch (e) {
+    box.textContent = t("qrTooLong");
+  }
+}
+
+function renderCards(list) {
+  var host = $("cards");
+  host.innerHTML = "";
+  $("cardsBox").style.display = list.length ? "block" : "none";
+  list.forEach(function (text, idx) {
+    var card = document.createElement("div");
+    card.className = "card";
+    var name = document.createElement("div");
+    name.className = "name";
+    name.setAttribute("dir", "auto");
+    name.textContent = configName(text, idx + 1);
+    var qrBtn = document.createElement("button");
+    qrBtn.type = "button";
+    qrBtn.setAttribute("data-card", "qr");
+    qrBtn.setAttribute("data-open", "0");
+    qrBtn.textContent = t("qr");
+    var cpBtn = document.createElement("button");
+    cpBtn.type = "button";
+    cpBtn.setAttribute("data-card", "copy");
+    cpBtn.textContent = t("copyOne");
+    var oneJson = xrayConfig(text);
+    var jsBtn = null;
+    if (oneJson) {
+      jsBtn = document.createElement("button");
+      jsBtn.type = "button";
+      jsBtn.setAttribute("data-card", "json");
+      jsBtn.textContent = t("copyJson");
+      jsBtn.onclick = function () {
+        copyText(JSON.stringify(oneJson, null, 2), function () { say("jsonCopiedOne"); });
+      };
+    }
+    var box = document.createElement("div");
+    box.className = "qr";
+    box.style.display = "none";
+    qrBtn.onclick = function () {
+      var open = qrBtn.getAttribute("data-open") === "1";
+      if (open) {
+        box.style.display = "none";
+        qrBtn.setAttribute("data-open", "0");
+        qrBtn.textContent = t("qr");
+      } else {
+        if (!box.innerHTML) { drawQr(box, text); }
+        box.style.display = "block";
+        qrBtn.setAttribute("data-open", "1");
+        qrBtn.textContent = t("hideQr");
+      }
+    };
+    cpBtn.onclick = function () { copyText(text, function () { say("copiedOne"); }); };
+    card.appendChild(name);
+    card.appendChild(qrBtn);
+    card.appendChild(cpBtn);
+    if (jsBtn) { card.appendChild(jsBtn); }
+    card.appendChild(box);
+    host.appendChild(card);
+  });
+}
+
+// ---- main flow ----
+var lastReport = [];
+
+function rowName(link) {
+  var h = link.indexOf("#");
+  if (h !== -1) {
+    try { var nm = decodeURIComponent(link.substring(h + 1)); if (nm) { return nm; } } catch (e) {}
+  }
+  var s = link.replace(/^[a-z][a-z0-9+.\-]*:\/\/[^@]*@/i, "");
+  return s.length > 44 ? s.substring(0, 44) + "..." : s;
+}
+function shorten(s) { return s.length > 44 ? s.substring(0, 44) + "..." : s; }
+
+function renderReport() {
+  var box = $("reportBox"), host = $("report");
+  host.innerHTML = "";
+  if (!lastReport.length) { box.style.display = "none"; return; }
+  box.style.display = "block";
+  var LIMIT = 60;
+  for (var i = 0; i < lastReport.length && i < LIMIT; i++) {
+    var r = lastReport[i];
+    var row = document.createElement("div");
+    row.className = "rep";
+    var nm = document.createElement("span");
+    nm.className = "repname";
+    nm.setAttribute("dir", "auto");
+    nm.textContent = r.name;
+    var st = document.createElement("span");
+    st.className = (r.state === "enhanced" || r.state === "converted") ? "repok" : "repwarn";
+    st.textContent = t("states")[r.state];
+    row.appendChild(nm);
+    row.appendChild(st);
+    host.appendChild(row);
+  }
+  if (lastReport.length > LIMIT) {
+    var more = document.createElement("div");
+    more.className = "rep";
+    more.textContent = t("reportMore").replace("{n}", lastReport.length - LIMIT);
+    host.appendChild(more);
+  }
+}
+
+function processText(text) {
+  saveSettings();
+  var variants = [], badAddr = 0, otherAddr = 0, skipProf = [], b, v, pack = $("packMode").checked, ptype = $("packType").value;
+  if (pack && ptype === "profile") {
+    var ids = profList();
+    if (!ids.length) { say("packEmpty"); return; }
+    for (v = 0; v < ids.length; v++) {
+      var pf = profileById(ids[v]);
+      b = buildOpts(profileSettings(pf));
+      if (b.err === "noAddr") { skipProf.push(pf.tag); continue; }   // nothing in the list for this preset's type
+      if (b.err) { say(b.err); return; }
+      badAddr = b.badAddr;   // the same list is read for every preset
+      variants.push({ opts: b.opts, tag: pf.tag });
+    }
+    if (!variants.length) { say("noAddr"); return; }
+  } else if (pack) {
+    var evs = packList();
+    if (!evs.length) { say("packEmpty"); return; }
+    for (v = 0; v < evs.length; v++) {
+      var st2 = readSettings();
+      st2.useEch = true;
+      st2.fm = "none";
+      st2.cs = "none";
+      st2.ech = evs[v];
+      b = buildOpts(st2);
+      if (b.err) { say(b.err); return; }
+      badAddr = b.badAddr;
+      variants.push({ opts: b.opts, tag: echLabel(evs[v]) });
+    }
+  } else {
+    b = buildOpts(readSettings());
+    if (b.err) { say(b.err); return; }
+    badAddr = b.badAddr;
+    otherAddr = b.otherAddr;
+    variants.push({ opts: b.opts, tag: "" });
+  }
+
+  var jl = jsonToLinks(text), jsonSkipped = [];
+  if (jl) {
+    if (jl.bad) { say("badJson"); return; }
+    if (!jl.links.length && !jl.skipped.length) { say("jsonNoConfigs"); return; }
+    jsonSkipped = jl.skipped;
+    text = jl.links.join("\n");
+  }
+  var items = extractItems(text, 0);
+  for (var js = 0; js < jsonSkipped.length; js++) { items.push({ kind: "protocol", text: jsonSkipped[js] }); }
+  var c = { total: 0, enh: 0, out: 0, dup: 0, badAddr: badAddr, otherAddr: otherAddr, skipProf: skipProf, enhanced: 0, converted: 0, notls: 0, noports: 0, noname: 0, noip: 0, echDropped: 0, othersec: 0,
+            protocol: 0, invalid: 0, incomplete: 0, unknown: 0, badb64: 0, deep: 0 };
+  var out = [], seen = Object.create(null), rows = [], i, j;
+  for (i = 0; i < items.length; i++) {
+    var it = items[i];
+    if (it.kind === "link") {
+      c.total++;
+      var best = null, made = [], rr, k2;
+      for (v = 0; v < variants.length; v++) {
+        rr = addEch(it.text, variants[v].opts);
+        c.echDropped += rr.echDropped || 0;
+        if (best === null || (best.texts.length === 0 && rr.texts.length > 0)) { best = rr; }
+        for (k2 = 0; k2 < rr.texts.length; k2++) {
+          made.push(variants.length > 1 ? appendTag(rr.texts[k2], variants[v].tag) : rr.texts[k2]);
+        }
+      }
+      c[best.state]++;
+      rows.push({ name: rowName(it.text), state: best.state });
+      for (j = 0; j < made.length; j++) {
+        if (seen[made[j]]) { c.dup++; }
+        else { seen[made[j]] = true; out.push(made[j]); }   // first occurrence keeps its place
+      }
+    } else {
+      c[it.kind]++;
+      rows.push({ name: shorten(it.text), state: it.kind });
+    }
+  }
+  c.enh = c.enhanced + c.converted;
+  c.out = out.length;
+  lastReport = rows;
+  renderReport();
+  if (out.length > 400) {
+    $("output").value = "";
+    renderCards([]);
+    var tooMany = out.length;
+    setStatus(function () { return t("tooMany").replace("{n}", tooMany); });
+    return;
+  }
+
+  $("output").value = out.join("\n");
+  renderCards(out);
+
+  if (!c.total) {
+    if (c.badb64) { say("badB64Only"); }
+    else { say("nothingFound"); }
+    return;
+  }
+  setStatus(function () { return t("sum")(c); });
+}
+
+// ---- Xray JSON input -> links ----
+function qpair(parts, k, v) {
+  if (v === undefined || v === null || v === "") { return; }
+  parts.push(k + "=" + safeEnc(String(v)));
+}
+
+// one Xray outbound -> vless/trojan link, or null
+function xrayToLink(ob, remarks) {
+  if (!ob || typeof ob !== "object") { return null; }
+  var proto = String(ob.protocol || "").toLowerCase();
+  if (proto !== "vless" && proto !== "trojan") { return null; }
+  var st = ob.settings || {}, host, port, id, flow = "", enc = "none", srv;
+  if (proto === "vless") {
+    var vn = st.vnext && st.vnext[0], us = vn && vn.users && vn.users[0];
+    if (vn && us) { host = vn.address; port = vn.port; id = us.id; flow = us.flow || ""; enc = us.encryption || "none"; }
+    else if (st.address) { host = st.address; port = st.port; id = st.id; flow = st.flow || ""; enc = st.encryption || "none"; }
+  } else {
+    srv = st.servers && st.servers[0];
+    if (srv) { host = srv.address; port = srv.port; id = srv.password; }
+    else if (st.address) { host = st.address; port = st.port; id = st.password; }
+  }
+  if (!host || !port || !id) { return null; }
+
+  var ss = ob.streamSettings || {};
+  var net = String(ss.network || "tcp").toLowerCase();
+  var sec = String(ss.security || "none").toLowerCase();
+  var q = [];
+  if (proto === "vless") { qpair(q, "encryption", enc); qpair(q, "flow", flow); }
+  qpair(q, "security", sec);
+  qpair(q, "type", net === "http" ? "h2" : net);
+
+  var pth = "", hst = "", x;
+  if (net === "ws" && ss.wsSettings) {
+    pth = ss.wsSettings.path || "";
+    hst = (ss.wsSettings.headers && (ss.wsSettings.headers.Host || ss.wsSettings.headers.host)) || ss.wsSettings.host || "";
+  } else if (net === "httpupgrade" && ss.httpupgradeSettings) {
+    pth = ss.httpupgradeSettings.path || ""; hst = ss.httpupgradeSettings.host || "";
+  } else if (net === "xhttp" || net === "splithttp") {
+    x = ss.xhttpSettings || ss.splithttpSettings || {};
+    pth = x.path || ""; hst = x.host || "";
+    qpair(q, "mode", x.mode);
+    if (x.extra && typeof x.extra === "object") { qpair(q, "extra", JSON.stringify(x.extra)); }
+  } else if (net === "grpc" && ss.grpcSettings) {
+    x = ss.grpcSettings;
+    qpair(q, "serviceName", x.serviceName);
+    qpair(q, "mode", x.multiMode ? "multi" : "gun");
+    qpair(q, "authority", x.authority);
+  } else if ((net === "h2" || net === "http") && ss.httpSettings) {
+    pth = ss.httpSettings.path || "";
+    hst = ss.httpSettings.host || "";
+  } else if ((net === "kcp" || net === "mkcp") && ss.kcpSettings) {
+    qpair(q, "headerType", ss.kcpSettings.header && ss.kcpSettings.header.type);
+    qpair(q, "seed", ss.kcpSettings.seed);
+  } else if (net === "tcp" && ss.tcpSettings && ss.tcpSettings.header && ss.tcpSettings.header.type === "http") {
+    var rq = ss.tcpSettings.header.request || {};
+    qpair(q, "headerType", "http");
+    pth = rq.path || "";
+    hst = (rq.headers && (rq.headers.Host || rq.headers.host)) || "";
+  }
+  if (Array.isArray(pth)) { pth = pth.join(","); }
+  if (Array.isArray(hst)) { hst = hst.join(","); }
+  qpair(q, "path", pth);
+  qpair(q, "host", hst);
+
+  if (sec === "tls" && ss.tlsSettings) {
+    x = ss.tlsSettings;
+    qpair(q, "sni", x.serverName);
+    qpair(q, "fp", x.fingerprint);
+    if (x.alpn && x.alpn.length) { qpair(q, "alpn", x.alpn.join(",")); }
+    if (x.allowInsecure) { qpair(q, "allowInsecure", "1"); }
+  } else if (sec === "reality" && ss.realitySettings) {
+    x = ss.realitySettings;
+    qpair(q, "sni", x.serverName);
+    qpair(q, "fp", x.fingerprint);
+    qpair(q, "pbk", x.publicKey || x.password);
+    qpair(q, "sid", x.shortId);
+    qpair(q, "spx", x.spiderX);
+  }
+
+  var h = String(host);
+  if (h.indexOf(":") !== -1 && h.charAt(0) !== "[") { h = "[" + h + "]"; }
+  var name = remarks || ob.tag || (host + ":" + port);
+  return proto + "://" + safeEnc(String(id)) + "@" + h + ":" + port + "?" + q.join("&") + "#" + safeEnc(String(name));
+}
+
+var NON_PROXY = { freedom: 1, blackhole: 1, dns: 1, loopback: 1, direct: 1, block: 1 };
+
+// text -> null (not JSON) | { bad: true } | { links: [...], skipped: [names] }
+function jsonToLinks(text) {
+  var tt = trim(text);
+  if (!/^[\[{]/.test(tt)) { return null; }
+  var data;
+  try { data = JSON.parse(tt); } catch (e) { return { bad: true, links: [], skipped: [] }; }
+  var links = [], skipped = [];
+  function outbound(ob, remarks) {
+    var l = xrayToLink(ob, remarks);
+    if (l) { links.push(l); return; }
+    var pr = ob && String(ob.protocol || "").toLowerCase();
+    if (pr && !NON_PROXY[pr]) { skipped.push((remarks || ob.tag || pr) + " (" + pr + ")"); }
+  }
+  function walk(node, depth) {
+    var i;
+    if (depth > 4 || !node) { return; }
+    if (Array.isArray(node)) { for (i = 0; i < node.length; i++) { walk(node[i], depth + 1); } return; }
+    if (typeof node !== "object") { return; }
+    if (Array.isArray(node.outbounds)) {
+      for (i = 0; i < node.outbounds.length; i++) { outbound(node.outbounds[i], node.remarks || node.ps || node.name || ""); }
+    } else if (node.protocol) {
+      outbound(node, node.remarks || node.ps || node.name || "");
+    }
+  }
+  walk(data, 0);
+  return { links: links, skipped: skipped };
+}
+// ---- end Xray JSON input ----
+
+// ---- Xray JSON (full configs for iPhone apps that import Xray JSON) ----
+// decodes every valid %XX run and leaves broken ones alone (decodeURIComponent alone throws on the whole string)
+function safeDec(s) {
+  try { return decodeURIComponent(s); } catch (e) {}
+  return s.replace(/(?:%[0-9a-fA-F]{2})+/g, function (m) {
+    try { return decodeURIComponent(m); } catch (e2) { return m; }
+  });
+}
+function csv(v) {
+  var a = v.split(","), r = [], i, x;
+  for (i = 0; i < a.length; i++) { x = trim(a[i]); if (x) { r.push(x); } }
+  return r;
+}
+
+function qparse(qs) {
+  var o = Object.create(null), parts = qs.split("&"), i, tok, eq, k, v;
+  for (i = 0; i < parts.length; i++) {
+    tok = parts[i];
+    if (!tok) { continue; }
+    k = keyOf(tok);
+    if (k in o) { continue; }
+    eq = tok.indexOf("=");
+    v = eq === -1 ? "" : tok.substring(eq + 1);
+    o[k] = trim(safeDec(v));
+  }
+  return o;
+}
+
+// one vless/trojan link -> { name, outbound } or null
+function linkToXray(link) {
+  var main = link, name = "", hashAt = link.indexOf("#");
+  if (hashAt !== -1) {
+    main = link.substring(0, hashAt);
+    name = safeDec(link.substring(hashAt + 1));
+  }
+  var qAt = main.indexOf("?");
+  if (qAt === -1) { return null; }
+  var p = parseBase(main.substring(0, qAt));
+  if (!p) { return null; }
+  if (!p.port) { p.port = "443"; }
+  var scheme = p.scheme.toLowerCase();
+  if (scheme !== "vless" && scheme !== "trojan") { return null; }
+  var q = qparse(main.substring(qAt + 1));
+
+  var user = safeDec(p.user);
+  var host = p.host;
+  if (host.charAt(0) === "[") { host = host.substring(1, host.length - 1); }
+  var port = parseInt(p.port, 10);
+
+  var ob = { tag: "proxy", protocol: scheme };
+  if (scheme === "trojan") {
+    ob.settings = { servers: [{ address: host, port: port, password: user }] };
+  } else {
+    var u = { id: user, encryption: q.encryption || "none" };
+    if (q.flow) { u.flow = q.flow; }
+    ob.settings = { vnext: [{ address: host, port: port, users: [u] }] };
+  }
+
+  var sec = (q.security || (scheme === "trojan" ? "tls" : "none")).toLowerCase();
+  var net = (q.type || "tcp").toLowerCase();
+  if (net === "splithttp") { net = "xhttp"; }
+  var hostHdr = q.host || "", path = q.path || "";
+  if (/^%2f/i.test(path)) { path = safeDec(path); }          // path that was encoded twice
+  var ss = { network: net, security: sec };
+
+  if (net === "ws") {
+    ss.wsSettings = { path: path || "/" };
+    if (hostHdr) { ss.wsSettings.headers = { Host: hostHdr }; }
+  } else if (net === "grpc") {
+    ss.grpcSettings = { serviceName: q.servicename || "", multiMode: q.mode === "multi" };
+    if (q.authority) { ss.grpcSettings.authority = q.authority; }
+  } else if (net === "httpupgrade") {
+    ss.httpupgradeSettings = { path: path || "/" };
+    if (hostHdr) { ss.httpupgradeSettings.host = hostHdr; }
+  } else if (net === "xhttp") {
+    var xs = { path: path || "/" };
+    if (hostHdr) { xs.host = hostHdr; }
+    if (q.mode) { xs.mode = q.mode; }
+    if (q.extra) { try { xs.extra = JSON.parse(q.extra); } catch (e2) {} }
+    ss.xhttpSettings = xs;
+  } else if (net === "kcp" || net === "mkcp") {
+    ss.network = "kcp";
+    ss.kcpSettings = { header: { type: q.headertype || "none" } };
+    if (q.seed) { ss.kcpSettings.seed = q.seed; }
+  } else if (net === "h2" || net === "http") {
+    ss.network = "h2";
+    ss.httpSettings = { path: path || "/" };
+    if (hostHdr) { ss.httpSettings.host = csv(hostHdr); }
+  } else if (net === "tcp" && (q.headertype || "").toLowerCase() === "http") {
+    ss.tcpSettings = { header: { type: "http", request: {
+      path: path ? csv(path) : ["/"],
+      headers: { Host: hostHdr ? csv(hostHdr) : [] }
+    } } };
+  }
+
+  if (sec === "tls") {
+    var tls = {};
+    if (q.sni) { tls.serverName = q.sni; }
+    if (q.fp) { tls.fingerprint = q.fp; }
+    if (q.alpn) { var al = csv(q.alpn); if (al.length) { tls.alpn = al; } }
+    if (q.allowinsecure === "1" || q.allowinsecure === "true" || q.insecure === "1") { tls.allowInsecure = true; }
+    if (q.ech) { tls.echConfigList = /%(2B|3A|2F)/i.test(q.ech) ? safeDec(q.ech) : q.ech; }
+    if (q.cs) { tls.cipherSuites = q.cs; }
+    ss.tlsSettings = tls;
+  }
+  if (q.fm) { try { ss.finalmask = JSON.parse(q.fm); } catch (e3) {} }
+
+  ob.streamSettings = ss;
+  return { name: name || (host + ":" + port), outbound: ob };
+}
+
+function xrayConfig(link) {
+  var r = linkToXray(link);
+  if (!r) { return null; }
+  var sniff = { enabled: true, destOverride: ["http", "tls", "quic"] };
+  return {
+    remarks: r.name,
+    log: { loglevel: "warning" },
+    inbounds: [
+      { tag: "socks", listen: "127.0.0.1", port: 10808, protocol: "socks", settings: { auth: "noauth", udp: true }, sniffing: sniff },
+      { tag: "http", listen: "127.0.0.1", port: 10809, protocol: "http", settings: {}, sniffing: sniff }
+    ],
+    outbounds: [
+      r.outbound,
+      { tag: "direct", protocol: "freedom", settings: {} },
+      { tag: "block", protocol: "blackhole", settings: { response: { type: "http" } } }
+    ],
+    routing: { domainStrategy: "AsIs", rules: [] }
+  };
+}
+
+// lines of the result -> { text, count, skipped }
+function buildJson(resultText) {
+  var lines = resultText.split(/\r?\n/), arr = [], skipped = 0, i, l, cfg;
+  for (i = 0; i < lines.length; i++) {
+    l = trim(lines[i]);
+    if (!l) { continue; }
+    cfg = xrayConfig(l);
+    if (cfg) { arr.push(cfg); } else { skipped++; }
+  }
+  return { text: JSON.stringify(arr, null, 2), count: arr.length, skipped: skipped };
+}
+// ---- end Xray JSON ----
+
+function downloadText(filename, text) {
+  var blob = new Blob([text], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+}
+
+function process(text) {
+  try { processText(text); }
+  catch (e) {
+    if (window.console && console.error) { console.error(e); }
+    say("unexpected");
+  }
+}
+
+var lastBlockedUrl = "";
+function hideBlocked() { $("blockedBox").style.display = "none"; }
+function failFetch(url) {
+  lastBlockedUrl = url;
+  $("blockedBox").style.display = "";
+  say("blockedOpen");
+}
+
+function fetchSub(url) {
+  say("fetching");
+  var x = new XMLHttpRequest();
+  try { x.open("GET", url, true); } catch (e) { failFetch(url); return; }
+  x.timeout = 20000;
+  x.onload = function () {
+    if (x.status < 200 || x.status >= 300) {
+      if (x.status === 0) { failFetch(url); return; }
+      setStatus(function () { return t("serverErr").replace("{n}", x.status); });
+      return;
+    }
+    var body = x.responseText;
+    if (!body || !trim(body)) { say("emptyResp"); return; }
+    process(body);
+  };
+  x.onerror = function () { failFetch(url); };
+  x.ontimeout = function () { say("timeout"); };
+  try { x.send(); } catch (e2) { failFetch(url); }
+}
+
+$("openSub").onclick = function () { if (lastBlockedUrl) { window.open(lastBlockedUrl, "_blank", "noopener"); } };
+
+$("run").onclick = function () {
+  hideBlocked();
+  var text = trim($("input").value);
+  if (!text) { say("pasteFirst"); return; }
+  if (/^https?:\/\/\S+$/i.test(text)) { fetchSub(text); }
+  else { process(text); }
+};
+
+var awaitPaste = false;
+function armPaste() {
+  awaitPaste = true;
+  var box = $("input");
+  box.value = "";
+  box.focus();
+  say("pasteBlocked");
+}
+// manual paste (long-press > Paste): run by itself as soon as text arrives
+$("input").addEventListener("input", function () {
+  if (awaitPaste && trim($("input").value)) {
+    awaitPaste = false;
+    $("run").onclick();
+  }
+});
+$("input").addEventListener("paste", function () {
+  if (!awaitPaste) { return; }
+  setTimeout(function () {
+    if (awaitPaste && trim($("input").value)) {
+      awaitPaste = false;
+      $("run").onclick();
+    }
+  }, 50);
+});
+
+$("paste").onclick = function () {
+  if (navigator.clipboard && navigator.clipboard.readText) {
+    navigator.clipboard.readText().then(function (txt) {
+      if (!txt) { armPaste(); return; }
+      awaitPaste = false;
+      $("input").value = txt;
+      $("run").onclick();
+    }, function () { armPaste(); });
+  } else {
+    armPaste();
+  }
+};
+
+$("fileIn").onchange = function () {
+  var f = this.files && this.files[0], inp = this;
+  if (!f) { return; }
+  function got(txt) {
+    awaitPaste = false;
+    $("input").value = String(txt || "").replace(/^\uFEFF/, "");
+    inp.value = "";
+    $("run").onclick();
+  }
+  function fail() { inp.value = ""; say("fileErr"); }
+  if (f.text) { f.text().then(got, fail); return; }
+  var rd = new FileReader();
+  rd.onload = function () { got(rd.result); };
+  rd.onerror = fail;
+  rd.readAsText(f);
+};
+
+$("clear").onclick = function () {
+  awaitPaste = false;
+  $("input").value = "";
+  $("output").value = "";
+  renderCards([]);
+  lastReport = [];
+  renderReport();
+  setStatus(null);
+  $("input").focus();
+};
+
+$("copy").onclick = function () {
+  var v = $("output").value;
+  if (!v) { say("nothingCopy"); return; }
+  copyText(v, function () { say("copied"); });
+};
+$("copy64").onclick = function () {
+  var v = $("output").value;
+  if (!v) { say("nothingCopy"); return; }
+  copyText(b64encodeUtf8(v), function () { say("copied64"); });
+};
+
+$("dlJson").onclick = function () {
+  var v = $("output").value;
+  if (!v) { say("nothingCopy"); return; }
+  var r = buildJson(v);
+  if (!r.count) { say("jsonNone"); return; }
+  downloadText("ech-modifier-ios.json", r.text);
+  setStatus(function () { return t("jsonDone")(r.count, r.skipped); });
+};
+$("copyJson").onclick = function () {
+  var v = $("output").value;
+  if (!v) { say("nothingCopy"); return; }
+  var r = buildJson(v);
+  if (!r.count) { say("jsonNone"); return; }
+  copyText(r.text, function () { setStatus(function () { return t("jsonCopied")(r.count, r.skipped); }); });
+};
+
+$("theme").onclick = function () { setTheme(currentTheme() === "dark" ? "light" : "dark"); };
+
+$("langFa").onclick = function () { applyLang("fa"); };
+$("langEn").onclick = function () { applyLang("en"); };
+
+buildPackChips();   // before the change handlers below, so the new checkboxes get them too
+
+function markCustom() { if ($("profile").value !== "custom") { $("profile").value = "custom"; } }
+var plain = document.querySelectorAll("#convert, #portsAll, input[name=port], input[name=packEch], input[name=packProf]");
+for (var k = 0; k < plain.length; k++) { plain[k].onchange = saveSettings; }
+var manual = ["useEch", "ech", "fp", "fmSel", "fmText", "csSel", "csText", "addrOn", "addrFam", "alpnAuto"];
+manual.forEach(function (id) {
+  $(id).addEventListener("change", function () { markCustom(); updateUi(); saveSettings(); });
+});
+$("ffMode").addEventListener("change", function () {
+  if (this.checked) {
+    $("useEch").checked = false;
+    $("fp").value = "unsafe";
+    if ($("fmSel").value === "none") { $("fmSel").value = "tlshello"; }
+    if ($("csSel").value === "none") { $("csSel").value = "full"; }
+  } else {
+    $("fmSel").value = "none";
+    $("csSel").value = "none";
+    if ($("fp").value === "unsafe") { $("fp").value = "chrome"; }
+    $("useEch").checked = true;
+  }
+  markCustom(); updateUi(); saveSettings();
+});
+$("addrText").addEventListener("change", saveSettings);   // the list is shared by every preset
+$("profile").onchange = function () {
+  if (this.value !== "custom") { applyProfile(this.value); }
+  saveSettings();
+};
+$("packMode").onchange = function () { updateUi(); saveSettings(); };
+$("packType").onchange = function () { updateUi(); saveSettings(); };
+$("echPreset").onchange = function () {
+  if (this.value === "__custom__") {
+    $("ech").value = "";
+    $("ech").style.display = "block";
+    $("ech").focus();
+  } else {
+    $("ech").value = this.value;
+    $("ech").style.display = "none";
+  }
+  markCustom();
+  saveSettings();
+};
+
+loadSettings();
+var saved = "";
+try { saved = localStorage.getItem("echLang") || ""; } catch (e) {}
+if (saved !== "fa" && saved !== "en") {
+  saved = /^fa/i.test(navigator.language || "") ? "fa" : "en";
+}
+applyLang(saved);
+</script>
+</body>
+</html>
